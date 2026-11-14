@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book an appointment</title>
+<style>
+  :root{
+    --bg:#eef3fd; --card:#fff; --ink:#0e1729; --muted:#67718a; --line:#dbe3f4;
+    --blue:#1f5eff; --blue-deep:#0b3ec9; --blue-soft:#e8efff; --blue-mid:#cfe0ff; --blue-ink:#0a2a7a;
+    --ok:#0fa968; --ok-soft:#e6f8f0; --warn:#a85c00; --bad:#c02626;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px;min-height:100vh;display:grid;place-items:center;
+       background:radial-gradient(90% 70% at 50% 0%, #dfe9ff 0%, var(--bg) 60%);
+       color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+  .capsule{width:100%;max-width:900px;background:var(--card);border:1px solid var(--line);
+           border-radius:30px;overflow:hidden;box-shadow:0 30px 70px -32px rgba(11,62,201,.35)}
+  .capsule-head{padding:26px 30px 0}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;
+           background:linear-gradient(135deg,var(--blue),var(--blue-deep));color:#fff;
+           font-size:13px;font-weight:600;padding:7px 16px;border-radius:999px;
+           box-shadow:0 8px 18px -10px rgba(31,94,255,.9)}
+  h1{font-size:clamp(22px,3.4vw,28px);margin:14px 0 6px;letter-spacing:-.02em}
+  p.sub{margin:0;color:var(--muted);font-size:14.5px}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:22px;padding:22px 30px 30px}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}.capsule{border-radius:22px}}
+
+  /* CALENDAR — blue */
+  .cal{background:linear-gradient(180deg,#f4f8ff 0%, #eaf1ff 100%);
+       border:1px solid var(--blue-mid);border-radius:22px;padding:16px;box-shadow:inset 0 1px 0 #fff}
+  .cal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+  .cal-top strong{font-size:14.5px;color:var(--blue-ink);font-weight:700;background:#fff;
+                  border:1px solid var(--blue-mid);border-radius:999px;padding:7px 16px}
+  .nav{width:34px;height:34px;border-radius:999px;border:1px solid var(--blue-mid);background:#fff;
+       cursor:pointer;font-size:15px;color:var(--blue-deep);display:grid;place-items:center}
+  .nav:hover:not(:disabled){background:var(--blue-soft)}
+  .nav:disabled{opacity:.35;cursor:not-allowed}
+  .dow,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .dow span{text-align:center;font-size:11.5px;font-weight:700;color:var(--blue-deep);
+            text-transform:uppercase;letter-spacing:.05em;padding:4px 0;opacity:.75}
+  .day{aspect-ratio:1;border:0;background:#fff;border-radius:999px;cursor:pointer;font-size:14px;
+       color:var(--blue-ink);display:grid;place-items:center;font-variant-numeric:tabular-nums;
+       transition:background .15s,color .15s,transform .1s}
+  .day:hover:not(:disabled){background:var(--blue-soft);transform:scale(1.04)}
+  .day:disabled{background:transparent;color:#b9c4dc;cursor:not-allowed;text-decoration:line-through}
+  .day.today{box-shadow:inset 0 0 0 1.5px var(--blue)}
+  .day.sel{background:linear-gradient(135deg,var(--blue),var(--blue-deep));color:#fff;font-weight:700;
+           box-shadow:0 8px 18px -10px rgba(31,94,255,1)}
+  .day.empty{visibility:hidden;background:transparent}
+
+  h2{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+     color:var(--blue-deep);margin:0 0 10px}
+  .slots{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .slot{border:1px solid var(--blue-mid);background:#fff;border-radius:999px;padding:9px 16px;
+        font-size:14px;cursor:pointer;color:var(--blue-ink);transition:all .15s}
+  .slot:hover:not(:disabled){background:var(--blue-soft);border-color:var(--blue);color:var(--blue-deep)}
+  .slot.sel{background:linear-gradient(135deg,var(--blue),var(--blue-deep));border-color:transparent;
+            color:#fff;font-weight:650;box-shadow:0 8px 18px -10px rgba(31,94,255,1)}
+  .slot:disabled{opacity:.4;cursor:not-allowed;text-decoration:line-through}
+  .hint{color:var(--muted);font-size:14px;margin:0}
+
+  form{display:grid;gap:12px}
+  label{font-size:13px;font-weight:600;display:grid;gap:6px}
+  input,select,textarea{width:100%;font:inherit;font-size:14.5px;color:var(--ink);padding:12px 16px;
+    border:1px solid var(--line);border-radius:16px;background:#fff}
+  textarea{resize:vertical;min-height:78px;border-radius:18px}
+  input:focus,select:focus,textarea:focus{outline:3px solid var(--blue-soft);border-color:var(--blue)}
+  .hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0;pointer-events:none}
+  .btn{width:100%;border:0;border-radius:999px;padding:15px 22px;font:inherit;font-weight:650;font-size:15px;
+       cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--blue),var(--blue-deep));
+       box-shadow:0 14px 26px -14px rgba(11,62,201,.95)}
+  .btn:hover{filter:brightness(1.07)}
+  .btn.ghost{background:#fff;color:var(--blue-deep);border:1px solid var(--blue-mid);box-shadow:none}
+  .btn.ghost:hover{background:var(--blue-soft);filter:none}
+  .err{color:var(--bad);font-size:13px;min-height:18px}
+
+  /* PENDING */
+  .pending{padding:44px 34px 38px;text-align:center;max-width:520px;margin:0 auto}
+  .pill-ok{width:74px;height:74px;border-radius:999px;
+           background:linear-gradient(135deg,var(--blue),var(--blue-deep));color:#fff;
+           display:grid;place-items:center;margin:0 auto 20px;font-size:32px;
+           box-shadow:0 18px 34px -16px rgba(31,94,255,1)}
+  .badge{display:inline-flex;gap:8px;align-items:center;background:#fff6e6;color:var(--warn);
+         font-size:13px;font-weight:650;padding:7px 15px;border-radius:999px;margin-bottom:14px}
+  .summary{border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:22px 0;text-align:left}
+  .summary div{display:flex;justify-content:space-between;gap:14px;padding:12px 18px;font-size:14.5px}
+  .summary div+div{border-top:1px solid var(--line)}
+  .summary dt{color:var(--muted)}
+  .summary dd{margin:0;font-weight:650}
+  .count{font-size:13px;color:var(--muted);margin-top:14px}
+
+  /* ─────────── CAPSULE — now gated by human approval ─────────── */
+  #view-capsule{padding:46px 34px 56px;display:grid;place-items:center;gap:18px}
+
+  .pill-card{width:100%;max-width:580px;border-radius:999px;padding:12px 14px 12px 18px;
+    display:flex;align-items:center;gap:14px;color:#fff;
+    background:linear-gradient(135deg,var(--blue) 0%, var(--blue-deep) 100%);
+    box-shadow:0 26px 50px -22px rgba(11,62,201,.85), inset 0 1px 0 rgba(255,255,255,.28);
+    transition:background .35s ease, box-shadow .35s ease;
+    animation:capsuleIn .45s cubic-bezier(.2,.9,.25,1) both}
+  @keyframes capsuleIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+
+  /* states */
+  .pill-card.verifying{background:linear-gradient(135deg,#3b74ff,#1246d6)}
+  .pill-card.ok{background:linear-gradient(135deg,#12b877 0%, #0a8c58 100%);
+                box-shadow:0 26px 50px -22px rgba(10,140,88,.85), inset 0 1px 0 rgba(255,255,255,.3)}
+  .pill-card.bad{background:linear-gradient(135deg,#e0503c 0%, #b3220f 100%)}
+
+  .pill-mark{width:44px;height:44px;flex:0 0 44px;border-radius:999px;background:rgba(255,255,255,.18);
+             display:grid;place-items:center;font-size:17px;border:1px solid rgba(255,255,255,.35);
+             transition:background .3s}
+  .pill-card.ok .pill-mark{background:rgba(255,255,255,.28)}
+  .pill-copy{flex:1;min-width:0}
+  .pill-copy strong{display:block;font-size:15px;letter-spacing:-.01em}
+  .pill-copy span{display:block;font-size:12.5px;opacity:.85;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* hold-to-approve button (a capsule inside the capsule) */
+  .pill-go{position:relative;overflow:hidden;flex:0 0 auto;border:0;cursor:pointer;border-radius:999px;
+    background:#fff;color:var(--blue-deep);font:inherit;font-weight:750;font-size:13.5px;
+    padding:12px 22px;touch-action:none;user-select:none;-webkit-user-select:none;
+    transition:transform .12s, background .3s, color .3s}
+  .pill-go:hover{transform:scale(1.03)}
+  .pill-go:disabled{cursor:default;transform:none}
+  .pill-card.ok .pill-go{background:rgba(255,255,255,.92);color:#0a8c58}
+  .hold-fill{position:absolute;inset:0;width:0;background:var(--blue-soft);z-index:0;
+             transition:width .06s linear}
+  .pill-card.ok .hold-fill{background:#d7f4e6}
+  .hold-label{position:relative;z-index:1;display:flex;align-items:center;gap:6px}
+
+  /* post-approval progress track */
+  .pill-track{width:100%;max-width:580px;height:9px;border-radius:999px;background:#dbe6ff;
+              overflow:hidden;border:1px solid var(--blue-mid);transition:opacity .3s;opacity:0}
+  .pill-track.on{opacity:1}
+  .pill-track i{display:block;height:100%;width:0;border-radius:999px;
+                background:linear-gradient(90deg,#12b877,#0a8c58)}
+
+  .capsule-note{text-align:center;max-width:580px;margin:0}
+  .capsule-note strong{display:block;font-size:18px;letter-spacing:-.02em;margin-bottom:6px}
+  .capsule-note span{color:var(--muted);font-size:13.5px}
+  .capsule-note b{color:var(--ink)}
+  .shake{animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+  #view-final{padding:56px 34px;text-align:center}
+  #view-final .flag{display:inline-block;background:var(--blue-soft);color:var(--blue-deep);
+    border:1px solid var(--blue-mid);border-radius:999px;padding:6px 14px;font-size:12.5px;
+    font-weight:650;margin-bottom:14px}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+
+<main class="capsule">
+  <!-- 1 · BOOK -->
+  <section id="view-book">
+    <div class="capsule-head">
+      <span class="eyebrow">● Appointments</span>
+      <h1 id="bizName">Book an appointment</h1>
+      <p class="sub">Pick a day and time. Every request is reviewed before it’s confirmed.</p>
+    </div>
+
+    <div class="grid">
+      <div class="cal">
+        <div class="cal-top">
+          <button class="nav" id="prev" aria-label="Previous month">‹</button>
+          <strong id="monthLabel"></strong>
+          <button class="nav" id="next" aria-label="Next month">›</button>
+        </div>
+        <div class="dow">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+        <div class="days" id="days"></div>
+      </div>
+
+      <div>
+        <h2 id="slotTitle">Choose a time</h2>
+        <div class="slots" id="slots"><p class="hint">Select a date first.</p></div>
+
+        <form id="form" novalidate>
+          <!-- honeypot: humans never see or fill this -->
+          <input id="hp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label>Full name <input id="name" autocomplete="name" placeholder="Jordan Ellis" required></label>
+          <label>Email <input id="email" type="email" autocomplete="email" placeholder="jordan@company.com" required></label>
+          <label>What’s this about?
+            <select id="topic">
+              <option>Intro call</option><option>Project quote</option>
+              <option>Existing client support</option><option>Something else</option>
+            </select>
+          </label>
+          <label>Notes (optional) <textarea id="notes" placeholder="Anything we should know beforehand?"></textarea></label>
+          <p class="err" id="err"></p>
+          <button class="btn" type="submit">Request appointment</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · PENDING -->
+  <section id="view-pending" class="pending" hidden>
+    <div class="pill-ok">✓</div>
+    <span class="badge">⏳ Awaiting approval</span>
+    <h1>Request sent</h1>
+    <p class="sub">We’ve passed your appointment to the team. You’ll get an email the moment it’s approved.</p>
+
+    <dl class="summary">
+      <div><dt>Reference</dt><dd id="sumRef">—</dd></div>
+      <div><dt>When</dt><dd id="sumWhen">—</dd></div>
+      <div><dt>Name</dt><dd id="sumName">—</dd></div>
+      <div><dt>Topic</dt><dd id="sumTopic">—</dd></div>
+    </dl>
+
+    <button class="btn" id="backNow">Continue to verification</button>
+    <p class="count">Next step needs a quick human check.</p>
+    <button class="btn ghost" id="bookAnother" style="margin-top:10px">Book another time</button>
+  </section>
+
+  <!-- 3 · CAPSULE — must be approved by a human -->
+  <section id="view-capsule" hidden>
+    <div class="pill-card" id="pillCard">
+      <div class="pill-mark" id="pillMark">↗</div>
+      <div class="pill-copy">
+        <strong id="pillTitle">Confirm you’re human</strong>
+        <span id="pillSub">Hold to approve this capsule</span>
+      </div>
+      <button class="pill-go" id="holdBtn" aria-describedby="pillSub">
+        <span class="hold-fill" id="holdFill"></span>
+        <span class="hold-label" id="holdLabel">Hold to approve</span>
+      </button>
+    </div>
+
+    <div class="pill-track" id="track"><i id="bar"></i></div>
+
+    <p class="capsule-note">
+      <strong id="capTitle">Human approval required</strong>
+      <span id="capText">Nothing leaves this page until you approve it. <b id="capHost">your site</b> is waiting.</span>
+    </p>
+  </section>
+
+  <!-- 4 · FINAL -->
+  <section id="view-final" hidden>
+    <span class="flag">Demo · redirect target</span>
+    <h1 id="finalTitle">Back on the original site</h1>
+    <p class="sub" id="finalNote">Set <code>CONFIG.redirectUrl</code> and this screen never appears — the browser leaves for your real site.</p>
+    <div style="max-width:340px;margin:24px auto 0">
+      <button class="btn ghost" id="restart">Restart the flow</button>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const CONFIG = {
+  businessName: "Northline Studio",
+  redirectUrl:  "https://example.com",
+  redirectSeconds: 10,
+  slotMinutes: 30,
+  maxAdvanceDays: 90,
+  hours: {
+    1:[["09:00","12:00"],["13:00","16:30"]],
+    2:[["09:00","12:00"],["13:00","16:30"]],
+    3:[["09:00","12:00"],["13:00","16:30"]],
+    4:[["09:00","12:00"],["13:00","16:30"]],
+    5:[["09:00","12:00"]], 6:[], 0:[]
+  },
+  closedDates: ["2026-12-24","2026-12-25","2026-12-26","2026-12-31","2027-01-01"],
+  takenSlots: ["2026-11-17T10:00","2026-11-17T10:30","2026-11-19T14:00"],
+
+  /* ── human approval gate ── */
+  humanCheck: {
+    holdMs: 900,          // how long the visitor must hold to approve
+    minMs: 320,           // shorter than this = a bare click, rejected
+    verifyMs: 700,        // "verifying…" delay before approval lands
+    secondsAfterApprove: 3, // countdown once approved
+    allowKeyboard: true
+  }
+};
+
+/* ============================================================
+   Helpers
+   ============================================================ */
+const $$ = id => document.getElementById(id);
+const iso     = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const today   = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+const to12    = t => { const [h,m]=t.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h>=12?"pm":"am"}`; };
+
+let state   = { view:new Date(today().getFullYear(), today().getMonth(), 1), date:null, time:null };
+let pendingTimer=null, approvedTimer=null, lastPayload=null, heldByKeyboard=false;
+
+/* ============================================================
+   Calendar
+   ============================================================ */
+const daysEl=$$("days"), monthLabel=$$("monthLabel"), prevBtn=$$("prev"), nextBtn=$$("next");
+const isClosed = d => CONFIG.closedDates.includes(iso(d)) || !(CONFIG.hours[d.getDay()]||[]).length;
+
+function renderCalendar(){
+  monthLabel.textContent = state.view.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  daysEl.innerHTML = "";
+  const first=new Date(state.view.getFullYear(),state.view.getMonth(),1);
+  const offset=(first.getDay()+6)%7;
+  const total=new Date(state.view.getFullYear(),state.view.getMonth()+1,0).getDate();
+  const limit=addDays(today(),CONFIG.maxAdvanceDays);
+
+  for(let i=0;i<offset;i++){
+    const pad=document.createElement("button");
+    pad.className="day empty"; pad.disabled=true; daysEl.appendChild(pad);
+  }
+  for(let d=1;d<=total;d++){
+    const date=new Date(state.view.getFullYear(),state.view.getMonth(),d);
+    const btn=document.createElement("button");
+    btn.type="button"; btn.className="day"; btn.textContent=d;
+    if(date<today()||date>limit||isClosed(date)) btn.disabled=true;
+    if(iso(date)===iso(today())) btn.classList.add("today");
+    if(state.date&&iso(date)===iso(state.date)) btn.classList.add("sel");
+    btn.addEventListener("click",()=>{ state.date=date; state.time=null; renderCalendar(); renderSlots(); });
+    daysEl.appendChild(btn);
+  }
+  prevBtn.disabled = state.view <= new Date(today().getFullYear(),today().getMonth(),1);
+  nextBtn.disabled = state.view >= new Date(limit.getFullYear(),limit.getMonth(),1);
+}
+prevBtn.addEventListener("click",()=>{ state.view.setMonth(state.view.getMonth()-1); renderCalendar(); });
+nextBtn.addEventListener("click",()=>{ state.view.setMonth(state.view.getMonth()+1); renderCalendar(); });
+
+/* ============================================================
+   Slots
+   ============================================================ */
+const slotsEl=$$("slots"), slotTitle=$$("slotTitle");
+
+function renderSlots(){
+  slotsEl.innerHTML="";
+  if(!state.date){ slotsEl.innerHTML='<p class="hint">Select a date first.</p>'; slotTitle.textContent="Choose a time"; return; }
+  slotTitle.textContent = state.date.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"});
+
+  const ranges=CONFIG.hours[state.date.getDay()]||[], out=[];
+  ranges.forEach(([from,to])=>{
+    let [h,m]=from.split(":").map(Number);
+    const [eh,em]=to.split(":").map(Number);
+    while(h*60+m+CONFIG.slotMinutes<=eh*60+em){
+      out.push(`${h}:${String(m).padStart(2,"0")}`);
+      m+=CONFIG.slotMinutes; if(m>=60){h++;m-=60;}
+    }
+  });
+  if(!out.length){ slotsEl.innerHTML='<p class="hint">Fully booked that day — try another date.</p>'; return; }
+
+  const now=new Date();
+  out.forEach(t=>{
+    const key=`${iso(state.date)}T${t}`;
+    const [h,m]=t.split(":").map(Number);
+    const passed = state.date<=today() && h*60+m <= now.getHours()*60+now.getMinutes();
+    const b=document.createElement("button");
+    b.type="button"; b.className="slot"; b.textContent=to12(t);
+    if(CONFIG.takenSlots.includes(key)||passed) b.disabled=true;
+    if(state.time===t) b.classList.add("sel");
+    b.addEventListener("click",()=>{ state.time=t; renderSlots(); });
+    slotsEl.appendChild(b);
+  });
+}
+
+/* ============================================================
+   Submit
+   ============================================================ */
+const form=$$("form"), errEl=$$("err");
+
+form.addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=$$("name").value.trim(), email=$$("email").value.trim();
+
+  if($$("hp").value) return (errEl.textContent="Verification failed. Please try again."); // bot
+  if(!state.date||!state.time) return (errEl.textContent="Please choose a date and a time.");
+  if(!name) return (errEl.textContent="Please add your name.");
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return (errEl.textContent="That email doesn’t look right.");
+  errEl.textContent="";
+
+  lastPayload = {
+    ref:"APT-"+Math.random().toString(36).slice(2,7).toUpperCase(),
+    name, email,
+    topic:$$("topic").value,
+    notes:$$("notes").value.trim(),
+    start:`${iso(state.date)}T${state.time}`,
+    status:"pending_approval",
+    humanApproved:false,
+    createdAt:new Date().toISOString()
+  };
+
+  try{
+    const all=JSON.parse(localStorage.getItem("appointments")||"[]");
+    all.push(lastPayload); localStorage.setItem("appointments",JSON.stringify(all));
+  }catch{}
+  console.log("Appointment submitted →",lastPayload);
+  showPending(lastPayload);
+});
+
+/* ============================================================
+   Views
+   ============================================================ */
+const views={ book:$$("view-book"), pending:$$("view-pending"),
+              capsule:$$("view-capsule"), final:$$("view-final") };
+function show(name){
+  Object.entries(views).forEach(([k,el])=> el.hidden=(k!==name));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+const stopTimers = () => { clearInterval(pendingTimer); clearInterval(approvedTimer); };
+
+/* ---------- 2 · pending ---------- */
+function showPending(p){
+  $$("sumRef").textContent   = p.ref;
+  $$("sumWhen").textContent  = new Date(p.start).toLocaleString(undefined,
+    {weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"});
+  $$("sumName").textContent  = p.name;
+  $$("sumTopic").textContent = p.topic;
+  show("pending");
+  stopTimers();
+
+  /* auto-advance now lands on the gate — it can never skip it */
+  let left=CONFIG.redirectSeconds;
+  $$("countdown") && ($$("countdown").textContent=left);
+  pendingTimer=setInterval(()=>{
+    left--;
+    if(left<=0){ stopTimers(); showCapsule(); }
+  },1000);
+}
+
+/* ============================================================
+   3 · CAPSULE — human approval gate
+   ============================================================ */
+const pillCard=$$("pillCard"), pillTitle=$$("pillTitle"), pillSub=$$("pillSub"),
+      pillMark=$$("pillMark"), holdBtn=$$("holdBtn"), holdFill=$$("holdFill"),
+      holdLabel=$$("holdLabel"), track=$$("track"), bar=$$("bar"),
+      capTitle=$$("capTitle"), capText=$$("capText"), capHost=$$("capHost");
+
+const HC = CONFIG.humanCheck;
+let rafId=null, holdStart=0, verifying=false, approved=false;
+
+function resetHuman(){
+  cancelAnimationFrame(rafId); rafId=null;
+  verifying=false; approved=false; heldByKeyboard=false;
+  pillCard.classList.remove("ok","bad","verifying","shake");
+  holdFill.style.width="0%";
+  holdBtn.disabled=false;
+  pillTitle.textContent="Confirm you’re human";
+  pillSub.textContent="Hold to approve this capsule";
+  holdLabel.textContent="Hold to approve";
+  pillMark.textContent="↗";
+  track.classList.remove("on");
+  bar.style.transition="none"; bar.style.width="0%";
+  capTitle.textContent="Human approval required";
+  capText.innerHTML='Nothing leaves this page until you approve it. <b id="capHost">'+hostName()+'</b> is waiting.';
+}
+
+function hostName(){
+  try{ return new URL(CONFIG.redirectUrl).host; }catch{ return "your site"; }
+}
+
+function showCapsule(){
+  stopTimers();
+  resetHuman();
+  capHost && (capHost.textContent=hostName());
+  show("capsule");
+  holdBtn.focus({preventScroll:true});
+}
+
+/* --- hold gesture --- */
+function beginHold(e){
+  if(e && e.type==="pointerdown"){ e.preventDefault(); }
+  if(approved||verifying) return;
+  pillCard.classList.remove("bad","shake");
+  holdStart = performance.now();
+  const tick = () => {
+    const p = Math.min((performance.now()-holdStart)/HC.holdMs, 1);
+    holdFill.style.width = (p*100)+"%";
+    if(p>=1) return completeHold();
+    rafId = requestAnimationFrame(tick);
+  };
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(tick);
+}
+
+function endHold(e){
+  if(approved||verifying) return;
+  cancelAnimationFrame(rafId); rafId=null;
+  const held = performance.now() - holdStart;
+  holdFill.style.width="0%";
+  if(held>0 && held < HC.minMs){
+    pillCard.classList.add("bad","shake");
+    pillSub.textContent = "Tap and hold — don’t just click.";
+    pillTitle.textContent = "That was too quick";
+    holdLabel.textContent = "Hold to approve";
+    setTimeout(()=>{ if(!approved&&!verifying){ pillCard.classList.remove("bad","shake");
+      pillTitle.textContent="Confirm you’re human"; pillSub.textContent="Hold to approve this capsule"; } },1600);
+  }
+}
+
+function completeHold(){
+  cancelAnimationFrame(rafId); rafId=null;
+  if(approved||verifying) return;
+  verifying=true;
+  holdBtn.disabled=true;
+  pillCard.classList.remove("bad"); pillCard.classList.add("verifying");
+  pillTitle.textContent="Verifying…";
+  pillSub.textContent="Checking it’s really you";
+  holdLabel.textContent="Verifying…";
+  holdFill.style.width="100%";
+
+  setTimeout(approve, HC.verifyMs);
+}
+
+/* --- approved: only now can the flow continue --- */
+function approve(){
+  verifying=false; approved=true;
+  pillCard.classList.remove("verifying","bad"); pillCard.classList.add("ok");
+  pillTitle.textContent="Approved by a human";
+  pillSub.textContent = lastPayload ? `Reference ${lastPayload.ref} · you confirmed this request` : "You confirmed this request";
+  holdLabel.textContent="Approved ✓";
+  pillMark.textContent="✓";
+  capTitle.textContent="Approved — moving you on";
+  capText.innerHTML='Heading to <b>'+hostName()+'</b> in <b id="capCount">'+HC.secondsAfterApprove+'</b>s.';
+
+  /* record the human approval on the booking */
+  if(lastPayload){
+    lastPayload.status="approved";
+    lastPayload.humanApproved=true;
+    lastPayload.approvedAt=new Date().toISOString();
+    try{
+      const all=JSON.parse(localStorage.getItem("appointments")||"[]");
+      const i=all.findIndex(a=>a.ref===lastPayload.ref);
+      if(i>-1) all[i]=lastPayload; else all.push(lastPayload);
+      localStorage.setItem("appointments",JSON.stringify(all));
+    }catch{}
+    /* POST approval to your backend:
+       await fetch("/api/appointments/"+lastPayload.ref+"/approve",{
+         method:"POST",headers:{"Content-Type":"application/json"},
+         body:JSON.stringify({humanApproved:true,approvedAt:lastPayload.approvedAt})}); */
+    console.log("Human approved →",lastPayload);
+  }
+
+  /* countdown starts only after approval */
+  track.classList.add("on");
+  requestAnimationFrame(()=>{
+    bar.style.transition=`width ${HC.secondsAfterApprove}s linear`;
+    bar.style.width="100%";
+  });
+
+  let left=HC.secondsAfterApprove;
+  const capCount=$$("capCount");
+  approvedTimer=setInterval(()=>{
+    left--;
+    if(capCount) capCount.textContent=Math.max(left,0);
+    if(left<=0){ stopTimers(); showFinal(); }
+  },1000);
+}
+
+/* pointer + keyboard hold */
+holdBtn.addEventListener("pointerdown", beginHold);
+holdBtn.addEventListener("pointerup", endHold);
+holdBtn.addEventListener("pointerleave", e=>{ if(!approved&&!verifying) endHold(e); });
+holdBtn.addEventListener("pointercancel", endHold);
+holdBtn.addEventListener("click", e=>{ e.preventDefault(); }); // clicks alone never approve
+
+if(HC.allowKeyboard){
+  holdBtn.addEventListener("keydown", e=>{
+    if((e.key===" "||e.key==="Enter") && !e.repeat){ heldByKeyboard=true; beginHold(null); }
+  });
+  holdBtn.addEventListener("keyup", e=>{
+    if((e.key===" "||e.key==="Enter") && heldByKeyboard){ heldByKeyboard=false; endHold(null); }
+  });
+}
+
+/* ============================================================
+   4 · final / redirect
+   ============================================================ */
+function showFinal(){
+  stopTimers();
+  if(!approved){ show("capsule"); return; }        // hard guard: no bypass
+  const placeholder = !CONFIG.redirectUrl || CONFIG.redirectUrl==="https://example.com";
+  if(placeholder){
+    $$("finalTitle").textContent="Flow complete — human approved";
+    show("final");
+  }else{
+    location.href = CONFIG.redirectUrl;
+  }
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+$$("backNow").addEventListener("click", showCapsule);
+$$("bookAnother").addEventListener("click", restart);
+$$("restart").addEventListener("click", restart);
+
+function restart(){
+  stopTimers();
+  state={ view:new Date(today().getFullYear(),today().getMonth(),1), date:null, time:null };
+  form.reset(); errEl.textContent="";
+  resetHuman();
+  show("book"); renderCalendar(); renderSlots();
+}
+
+/* Esc no longer skips — it just cancels a hold in progress */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && !views.capsule.hidden && !approved){
+    cancelAnimationFrame(rafId); rafId=null; holdFill.style.width="0%";
+  }
+});
+
+/* boot */
+$$("bizName").textContent=`Book with ${CONFIG.businessName}`;
+document.title=`Book an appointment — ${CONFIG.businessName}`;
+renderCalendar(); renderSlots();
+</script>
+</body>
+</html>
